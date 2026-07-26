@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --root-font-size: 16px;
+}
+
+html {
+  font-size: var(--root-font-size);
+}
+
+html[data-text-size="large"] {
+  --root-font-size: 18px;
+}
+
+html[data-text-size="xl"] {
+  --root-font-size: 20px;
+}
+
+body {
+  @apply bg-surface text-ink font-sans antialiased;
+  margin: 0;
+  min-height: 100vh;
+}
+
+*:focus-visible {
+  outline: 2px solid theme("colors.primary.600");
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
