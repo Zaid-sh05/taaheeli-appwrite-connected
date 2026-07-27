@@ -60,9 +60,15 @@ function boolean(value: unknown): boolean {
   return value === true;
 }
 
-function dateParts(value: unknown): { date: string; time: string } {
+function dateParts(value: unknown): {
+  date: string;
+  time: string;
+} {
   if (typeof value !== "string" || !value) {
-    return { date: "", time: "" };
+    return {
+      date: "",
+      time: "",
+    };
   }
 
   const parsed = new Date(value);
@@ -83,7 +89,11 @@ function dateParts(value: unknown): { date: string; time: string } {
 }
 
 function mapPatient(row: Row): Patient {
-  const status = text(row.status) === "active" ? "active" : "inactive";
+  const status =
+    text(row.status) === "active"
+      ? "active"
+      : "inactive";
+
   const gender = text(row.gender);
 
   return {
@@ -92,7 +102,9 @@ function mapPatient(row: Row): Patient {
     fileNumber: text(row.fileNumber),
     username: text(row.username),
     status,
-    assignedTherapistId: nullableText(row.assignedTherapistId),
+    assignedTherapistId: nullableText(
+      row.assignedTherapistId,
+    ),
     birthDate: text(row.birthDate).slice(0, 10),
     gender:
       gender === "male" || gender === "female"
@@ -100,21 +112,32 @@ function mapPatient(row: Row): Patient {
         : "",
     phone: nullableText(row.phone) ?? undefined,
     email: nullableText(row.email) ?? undefined,
-    caregiverName: nullableText(row.caregiverName) ?? undefined,
+    caregiverName:
+      nullableText(row.caregiverName) ?? undefined,
     caregiverRelation:
-      nullableText(row.caregiverRelation) ?? undefined,
+      nullableText(row.caregiverRelation) ??
+      undefined,
     progress: Math.min(
       100,
       Math.max(0, number(row.progress)),
     ),
-    lastSessionDate: nullableText(row.lastSessionDate),
-    nextAppointmentDate: nullableText(row.nextAppointmentDate),
+    lastSessionDate: nullableText(
+      row.lastSessionDate,
+    ),
+    nextAppointmentDate: nullableText(
+      row.nextAppointmentDate,
+    ),
     createdAt: row.$createdAt,
   };
 }
 
-function mapRequest(row: Row): RegistrationRequest {
-  const rawStatus = text(row.requestStatus, "pending");
+function mapRequest(
+  row: Row,
+): RegistrationRequest {
+  const rawStatus = text(
+    row.requestStatus,
+    "pending",
+  );
 
   const validStatuses: RequestStatus[] = [
     "pending",
@@ -142,17 +165,18 @@ function mapRequest(row: Row): RegistrationRequest {
         : "",
     hasCaregiver: boolean(row.hasCaregiver),
     caregiverName: text(row.caregiverName),
-    caregiverRelation: text(row.caregiverRelation),
+    caregiverRelation: text(
+      row.caregiverRelation,
+    ),
     phone: nullableText(row.phone) ?? undefined,
     email: nullableText(row.email) ?? undefined,
     consent: boolean(row.consent),
     status,
     submittedAt: row.$createdAt,
 
-    // العمود reviewedAt غير موجود في Appwrite.
+    // العمودان غير موجودين في Appwrite.
     reviewedAt: null,
-
-    reviewNote: nullableText(row.reviewNote),
+    reviewNote: null,
   };
 }
 
@@ -175,7 +199,9 @@ function mapEmployee(row: Row): Employee {
   return {
     id: row.$id,
     fullName: text(row.fullName),
-    role: allowedRoles.includes(role as Employee["role"])
+    role: allowedRoles.includes(
+      role as Employee["role"],
+    )
       ? (role as Employee["role"])
       : "therapist",
     specialty:
@@ -191,8 +217,12 @@ function mapEmployee(row: Row): Employee {
   };
 }
 
-function mapAppointment(row: Row): Appointment {
-  const { date, time } = dateParts(row.scheduledAt);
+function mapAppointment(
+  row: Row,
+): Appointment {
+  const { date, time } = dateParts(
+    row.scheduledAt,
+  );
 
   const rawStatus = text(
     row.appointmentStatus,
@@ -247,7 +277,9 @@ function mapSession(row: Row): RehabSession {
         : "attended",
     completedExerciseIds: [],
     goalProgressUpdates: [],
-    nextRecommendations: text(row.recommendations),
+    nextRecommendations: text(
+      row.recommendations,
+    ),
     followUpDate: null,
     status,
   };
@@ -272,30 +304,37 @@ function mapPlan(row: Row): TreatmentPlan {
       )
     : 0;
 
-  const validStatuses: TreatmentPlan["status"][] = [
-    "active",
-    "completed",
-    "paused",
-    "draft",
-  ];
+  const validStatuses: TreatmentPlan["status"][] =
+    [
+      "active",
+      "completed",
+      "paused",
+      "draft",
+    ];
 
   return {
     id: row.$id,
     patientId: text(row.patientId),
-    employeeId: text(row.responsibleEmployeeId),
+    employeeId: text(
+      row.responsibleEmployeeId,
+    ),
     title: text(row.title),
     startDate: text(row.startDate).slice(0, 10),
     endDate:
       nullableText(row.endDate)?.slice(0, 10) ??
       null,
     reviewDate:
-      nullableText(row.reviewDate)?.slice(0, 10) ??
-      null,
-    goals: objectiveLines.map((goal, index) => ({
-      id: `${row.$id}-goal-${index + 1}`,
-      text: goal,
-      progress,
-    })),
+      nullableText(row.reviewDate)?.slice(
+        0,
+        10,
+      ) ?? null,
+    goals: objectiveLines.map(
+      (goal, index) => ({
+        id: `${row.$id}-goal-${index + 1}`,
+        text: goal,
+        progress,
+      }),
+    ),
     sessionFrequency: `${number(
       row.sessionsPerWeek,
     )} جلسات أسبوعيًا`,
@@ -324,7 +363,6 @@ async function listRows(
 
     return result.rows as Row[];
   } catch {
-    // بعض المستخدمين لا يملكون صلاحية قراءة كل الجداول.
     return [];
   }
 }
@@ -345,10 +383,13 @@ export async function loadAppwriteData(): Promise<DemoData> {
     listRows(appwriteConfig.tables.employees),
     listRows(appwriteConfig.tables.appointments),
     listRows(appwriteConfig.tables.sessions),
-    listRows(appwriteConfig.tables.treatmentPlans),
+    listRows(
+      appwriteConfig.tables.treatmentPlans,
+    ),
   ]);
 
-  const mappedEmployees = employees.map(mapEmployee);
+  const mappedEmployees =
+    employees.map(mapEmployee);
 
   const mappedAppointments =
     appointments.map(mapAppointment);
@@ -364,23 +405,26 @@ export async function loadAppwriteData(): Promise<DemoData> {
 
     requests: requests.map(mapRequest),
 
-    employees: mappedEmployees.map((employee) => ({
-      ...employee,
+    employees: mappedEmployees.map(
+      (employee) => ({
+        ...employee,
 
-      assignedCaseCount: patients.filter(
-        (patient) =>
-          text(patient.assignedTherapistId) ===
-          employee.id,
-      ).length,
-
-      todayAppointmentCount:
-        mappedAppointments.filter(
-          (appointment) =>
-            appointment.employeeId ===
-              employee.id &&
-            appointment.date === today,
+        assignedCaseCount: patients.filter(
+          (patient) =>
+            text(
+              patient.assignedTherapistId,
+            ) === employee.id,
         ).length,
-    })),
+
+        todayAppointmentCount:
+          mappedAppointments.filter(
+            (appointment) =>
+              appointment.employeeId ===
+                employee.id &&
+              appointment.date === today,
+          ).length,
+      }),
+    ),
 
     appointments: mappedAppointments,
 
@@ -398,7 +442,8 @@ export async function createRegistrationRequest(
     databaseId: appwriteConfig.databaseId,
 
     tableId:
-      appwriteConfig.tables.registrationRequests,
+      appwriteConfig.tables
+        .registrationRequests,
 
     rowId: ID.unique(),
 
@@ -429,8 +474,6 @@ export async function createRegistrationRequest(
 
       consent: form.consent,
 
-      reviewNote: null,
-
       requestStatus: "pending",
     },
   });
@@ -443,12 +486,13 @@ export async function updateRegistrationRequest(
   data: Record<string, unknown>,
 ): Promise<void> {
   /*
-   * بعض أجزاء الواجهة ما زالت ترسل reviewedAt.
-   * بما أن العمود غير موجود في Appwrite،
-   * يتم حذفه قبل إرسال التحديث.
+   * بعض أجزاء الواجهة ما زالت ترسل
+   * reviewedAt و reviewNote.
+   * يتم حذفهما قبل إرسال التحديث إلى Appwrite.
    */
   const {
     reviewedAt: _removedReviewedAt,
+    reviewNote: _removedReviewNote,
     ...validData
   } = data;
 
@@ -456,7 +500,8 @@ export async function updateRegistrationRequest(
     databaseId: appwriteConfig.databaseId,
 
     tableId:
-      appwriteConfig.tables.registrationRequests,
+      appwriteConfig.tables
+        .registrationRequests,
 
     rowId,
 
@@ -502,7 +547,8 @@ function appointmentData(
 
     cancellationReason:
       appointment.status === "cancelled"
-        ? appointment.notes ?? "أُلغي الموعد"
+        ? appointment.notes ??
+          "أُلغي الموعد"
         : null,
   };
 }
@@ -554,7 +600,8 @@ export async function createSessionRow(
     progressValues.length > 0
       ? Math.round(
           progressValues.reduce(
-            (sum, value) => sum + value,
+            (sum, value) =>
+              sum + value,
             0,
           ) / progressValues.length,
         )
@@ -581,7 +628,8 @@ export async function createSessionRow(
         `${session.date}T00:00:00.000Z`,
       ).toISOString(),
 
-      durationMinutes: session.durationMin,
+      durationMinutes:
+        session.durationMin,
 
       sessionType: session.type,
 
@@ -593,13 +641,15 @@ export async function createSessionRow(
       progressScore,
 
       objectivesWorkedOn:
-        session.completedExerciseIds.join("\n") ||
-        null,
+        session.completedExerciseIds.join(
+          "\n",
+        ) || null,
 
       observations:
         session.notes || null,
 
-      patientResponse: session.attendance,
+      patientResponse:
+        session.attendance,
 
       recommendations:
         session.nextRecommendations || null,
@@ -688,7 +738,8 @@ export async function createTreatmentPlanRow(
     databaseId: appwriteConfig.databaseId,
 
     tableId:
-      appwriteConfig.tables.treatmentPlans,
+      appwriteConfig.tables
+        .treatmentPlans,
 
     rowId: ID.unique(),
 
@@ -705,7 +756,8 @@ export async function updateTreatmentPlanRow(
     databaseId: appwriteConfig.databaseId,
 
     tableId:
-      appwriteConfig.tables.treatmentPlans,
+      appwriteConfig.tables
+        .treatmentPlans,
 
     rowId: plan.id,
 
