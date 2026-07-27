@@ -94,7 +94,14 @@ function mapPatient(row: Row): Patient {
       ? "active"
       : "inactive";
 
-  const gender = text(row.gender);
+  const rawGender = text(row.gender);
+
+  const gender: Patient["gender"] =
+    rawGender === "Male" || rawGender === "male"
+      ? "male"
+      : rawGender === "Female" || rawGender === "female"
+        ? "female"
+        : "";
 
   return {
     id: row.$id,
@@ -106,17 +113,13 @@ function mapPatient(row: Row): Patient {
       row.assignedTherapistId,
     ),
     birthDate: text(row.birthDate).slice(0, 10),
-    gender:
-      gender === "male" || gender === "female"
-        ? gender
-        : "",
+    gender,
     phone: nullableText(row.phone) ?? undefined,
     email: nullableText(row.email) ?? undefined,
     caregiverName:
       nullableText(row.caregiverName) ?? undefined,
     caregiverRelation:
-      nullableText(row.caregiverRelation) ??
-      undefined,
+      nullableText(row.caregiverRelation) ?? undefined,
     progress: Math.min(
       100,
       Math.max(0, number(row.progress)),
@@ -152,17 +155,21 @@ function mapRequest(
     ? (rawStatus as RequestStatus)
     : "pending";
 
-  const gender = text(row.gender);
+  const rawGender = text(row.gender);
+
+  const gender: RegistrationRequest["gender"] =
+    rawGender === "Male" || rawGender === "male"
+      ? "male"
+      : rawGender === "Female" || rawGender === "female"
+        ? "female"
+        : "";
 
   return {
     id: row.$id,
     fullName: text(row.fullName),
     username: text(row.username),
     birthDate: text(row.birthDate).slice(0, 10),
-    gender:
-      gender === "male" || gender === "female"
-        ? gender
-        : "",
+    gender,
     hasCaregiver: boolean(row.hasCaregiver),
     caregiverName: text(row.caregiverName),
     caregiverRelation: text(
@@ -173,8 +180,6 @@ function mapRequest(
     consent: boolean(row.consent),
     status,
     submittedAt: row.$createdAt,
-
-    // العمودان غير موجودين في Appwrite.
     reviewedAt: null,
     reviewNote: null,
   };
@@ -456,7 +461,12 @@ export async function createRegistrationRequest(
         `${form.birthDate}T00:00:00.000Z`,
       ).toISOString(),
 
-      gender: form.gender || null,
+      gender:
+        form.gender === "male"
+          ? "Male"
+          : form.gender === "female"
+            ? "Female"
+            : null,
 
       hasCaregiver: form.hasCaregiver,
 
@@ -485,16 +495,25 @@ export async function updateRegistrationRequest(
   rowId: string,
   data: Record<string, unknown>,
 ): Promise<void> {
-  /*
-   * بعض أجزاء الواجهة ما زالت ترسل
-   * reviewedAt و reviewNote.
-   * يتم حذفهما قبل إرسال التحديث إلى Appwrite.
-   */
   const {
     reviewedAt: _removedReviewedAt,
     reviewNote: _removedReviewNote,
-    ...validData
+    gender: rawGender,
+    ...restData
   } = data;
+
+  const validData: Record<string, unknown> = {
+    ...restData,
+  };
+
+  if (rawGender !== undefined) {
+    validData.gender =
+      rawGender === "male"
+        ? "Male"
+        : rawGender === "female"
+          ? "Female"
+          : rawGender;
+  }
 
   await tablesDB.updateRow({
     databaseId: appwriteConfig.databaseId,
