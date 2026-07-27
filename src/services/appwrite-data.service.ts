@@ -69,7 +69,11 @@ function dateParts(value: unknown): { date: string; time: string } {
 
   if (Number.isNaN(parsed.getTime())) {
     const [date = "", time = ""] = value.split("T");
-    return { date, time: time.slice(0, 5) };
+
+    return {
+      date,
+      time: time.slice(0, 5),
+    };
   }
 
   return {
@@ -91,13 +95,18 @@ function mapPatient(row: Row): Patient {
     assignedTherapistId: nullableText(row.assignedTherapistId),
     birthDate: text(row.birthDate).slice(0, 10),
     gender:
-      gender === "male" || gender === "female" ? gender : "",
+      gender === "male" || gender === "female"
+        ? gender
+        : "",
     phone: nullableText(row.phone) ?? undefined,
     email: nullableText(row.email) ?? undefined,
     caregiverName: nullableText(row.caregiverName) ?? undefined,
     caregiverRelation:
       nullableText(row.caregiverRelation) ?? undefined,
-    progress: Math.min(100, Math.max(0, number(row.progress))),
+    progress: Math.min(
+      100,
+      Math.max(0, number(row.progress)),
+    ),
     lastSessionDate: nullableText(row.lastSessionDate),
     nextAppointmentDate: nullableText(row.nextAppointmentDate),
     createdAt: row.$createdAt,
@@ -106,15 +115,20 @@ function mapPatient(row: Row): Patient {
 
 function mapRequest(row: Row): RegistrationRequest {
   const rawStatus = text(row.requestStatus, "pending");
+
   const validStatuses: RequestStatus[] = [
     "pending",
     "approved",
     "rejected",
     "info-requested",
   ];
-  const status = validStatuses.includes(rawStatus as RequestStatus)
+
+  const status = validStatuses.includes(
+    rawStatus as RequestStatus,
+  )
     ? (rawStatus as RequestStatus)
     : "pending";
+
   const gender = text(row.gender);
 
   return {
@@ -123,7 +137,9 @@ function mapRequest(row: Row): RegistrationRequest {
     username: text(row.username),
     birthDate: text(row.birthDate).slice(0, 10),
     gender:
-      gender === "male" || gender === "female" ? gender : "",
+      gender === "male" || gender === "female"
+        ? gender
+        : "",
     hasCaregiver: boolean(row.hasCaregiver),
     caregiverName: text(row.caregiverName),
     caregiverRelation: text(row.caregiverRelation),
@@ -132,13 +148,17 @@ function mapRequest(row: Row): RegistrationRequest {
     consent: boolean(row.consent),
     status,
     submittedAt: row.$createdAt,
-    reviewedAt: nullableText(row.reviewedAt),
+
+    // العمود reviewedAt غير موجود في Appwrite.
+    reviewedAt: null,
+
     reviewNote: nullableText(row.reviewNote),
   };
 }
 
 function mapEmployee(row: Row): Employee {
   const role = text(row.role);
+
   const allowedRoles: Employee["role"][] = [
     "doctor",
     "therapist",
@@ -146,8 +166,11 @@ function mapEmployee(row: Row): Employee {
     "nurse",
     "coordinator",
   ];
+
   const employmentStatus =
-    text(row.employmentStatus) === "active" ? "active" : "on-leave";
+    text(row.employmentStatus) === "active"
+      ? "active"
+      : "on-leave";
 
   return {
     id: row.$id,
@@ -155,7 +178,10 @@ function mapEmployee(row: Row): Employee {
     role: allowedRoles.includes(role as Employee["role"])
       ? (role as Employee["role"])
       : "therapist",
-    specialty: role === "admin" ? "إدارة المركز" : "التأهيل والعلاج",
+    specialty:
+      role === "admin"
+        ? "إدارة المركز"
+        : "التأهيل والعلاج",
     employmentStatus,
     assignedCaseCount: 0,
     todayAppointmentCount: 0,
@@ -167,7 +193,12 @@ function mapEmployee(row: Row): Employee {
 
 function mapAppointment(row: Row): Appointment {
   const { date, time } = dateParts(row.scheduledAt);
-  const rawStatus = text(row.appointmentStatus, "scheduled");
+
+  const rawStatus = text(
+    row.appointmentStatus,
+    "scheduled",
+  );
+
   const status: Appointment["status"] =
     rawStatus === "no_show"
       ? "missed"
@@ -196,8 +227,11 @@ function mapAppointment(row: Row): Appointment {
 
 function mapSession(row: Row): RehabSession {
   const rawStatus = text(row.sessionStatus);
+
   const status: RehabSession["status"] =
-    rawStatus === "completed" ? "completed" : "draft";
+    rawStatus === "completed"
+      ? "completed"
+      : "draft";
 
   return {
     id: row.$id,
@@ -208,7 +242,9 @@ function mapSession(row: Row): RehabSession {
     type: text(row.sessionType),
     notes: text(row.observations),
     attendance:
-      rawStatus === "cancelled" ? "missed" : "attended",
+      rawStatus === "cancelled"
+        ? "missed"
+        : "attended",
     completedExerciseIds: [],
     goalProgressUpdates: [],
     nextRecommendations: text(row.recommendations),
@@ -222,13 +258,20 @@ function mapPlan(row: Row): TreatmentPlan {
     .split(/\r?\n/)
     .map((item) => item.trim())
     .filter(Boolean);
+
   const status = text(row.planStatus);
-  const progressMatch = text(row.progressSummary).match(
-    /(\d{1,3})\s*%/,
-  );
+
+  const progressMatch = text(
+    row.progressSummary,
+  ).match(/(\d{1,3})\s*%/);
+
   const progress = progressMatch
-    ? Math.min(100, Number.parseInt(progressMatch[1], 10))
+    ? Math.min(
+        100,
+        Number.parseInt(progressMatch[1], 10),
+      )
     : 0;
+
   const validStatuses: TreatmentPlan["status"][] = [
     "active",
     "completed",
@@ -242,26 +285,36 @@ function mapPlan(row: Row): TreatmentPlan {
     employeeId: text(row.responsibleEmployeeId),
     title: text(row.title),
     startDate: text(row.startDate).slice(0, 10),
-    endDate: nullableText(row.endDate)?.slice(0, 10) ?? null,
-    reviewDate: nullableText(row.reviewDate)?.slice(0, 10) ?? null,
+    endDate:
+      nullableText(row.endDate)?.slice(0, 10) ??
+      null,
+    reviewDate:
+      nullableText(row.reviewDate)?.slice(0, 10) ??
+      null,
     goals: objectiveLines.map((goal, index) => ({
       id: `${row.$id}-goal-${index + 1}`,
       text: goal,
       progress,
     })),
-    sessionFrequency: `${number(row.sessionsPerWeek)} جلسات أسبوعيًا`,
+    sessionFrequency: `${number(
+      row.sessionsPerWeek,
+    )} جلسات أسبوعيًا`,
     notes:
       nullableText(row.notes) ??
       nullableText(row.progressSummary) ??
       text(row.interventions),
     progress,
-    status: validStatuses.includes(status as TreatmentPlan["status"])
+    status: validStatuses.includes(
+      status as TreatmentPlan["status"],
+    )
       ? (status as TreatmentPlan["status"])
       : "draft",
   };
 }
 
-async function listRows(tableId: string): Promise<Row[]> {
+async function listRows(
+  tableId: string,
+): Promise<Row[]> {
   try {
     const result = await tablesDB.listRows({
       databaseId: appwriteConfig.databaseId,
@@ -271,7 +324,7 @@ async function listRows(tableId: string): Promise<Row[]> {
 
     return result.rows as Row[];
   } catch {
-    // Some roles intentionally cannot read every table.
+    // بعض المستخدمين لا يملكون صلاحية قراءة كل الجداول.
     return [];
   }
 }
@@ -286,7 +339,9 @@ export async function loadAppwriteData(): Promise<DemoData> {
     treatmentPlans,
   ] = await Promise.all([
     listRows(appwriteConfig.tables.patients),
-    listRows(appwriteConfig.tables.registrationRequests),
+    listRows(
+      appwriteConfig.tables.registrationRequests,
+    ),
     listRows(appwriteConfig.tables.employees),
     listRows(appwriteConfig.tables.appointments),
     listRows(appwriteConfig.tables.sessions),
@@ -294,28 +349,45 @@ export async function loadAppwriteData(): Promise<DemoData> {
   ]);
 
   const mappedEmployees = employees.map(mapEmployee);
-  const mappedAppointments = appointments.map(mapAppointment);
-  const today = new Date().toISOString().slice(0, 10);
+
+  const mappedAppointments =
+    appointments.map(mapAppointment);
+
+  const today = new Date()
+    .toISOString()
+    .slice(0, 10);
 
   return {
     ...EMPTY_DATA,
+
     patients: patients.map(mapPatient),
+
     requests: requests.map(mapRequest),
+
     employees: mappedEmployees.map((employee) => ({
       ...employee,
+
       assignedCaseCount: patients.filter(
         (patient) =>
-          text(patient.assignedTherapistId) === employee.id,
+          text(patient.assignedTherapistId) ===
+          employee.id,
       ).length,
-      todayAppointmentCount: mappedAppointments.filter(
-        (appointment) =>
-          appointment.employeeId === employee.id &&
-          appointment.date === today,
-      ).length,
+
+      todayAppointmentCount:
+        mappedAppointments.filter(
+          (appointment) =>
+            appointment.employeeId ===
+              employee.id &&
+            appointment.date === today,
+        ).length,
     })),
+
     appointments: mappedAppointments,
+
     sessions: sessions.map(mapSession),
-    treatmentPlans: treatmentPlans.map(mapPlan),
+
+    treatmentPlans:
+      treatmentPlans.map(mapPlan),
   };
 }
 
@@ -324,25 +396,41 @@ export async function createRegistrationRequest(
 ): Promise<string> {
   const row = await tablesDB.createRow({
     databaseId: appwriteConfig.databaseId,
-    tableId: appwriteConfig.tables.registrationRequests,
+
+    tableId:
+      appwriteConfig.tables.registrationRequests,
+
     rowId: ID.unique(),
+
     data: {
       fullName: form.fullName.trim(),
+
       username: form.username.trim(),
-      birthDate: new Date(`${form.birthDate}T00:00:00.000Z`).toISOString(),
+
+      birthDate: new Date(
+        `${form.birthDate}T00:00:00.000Z`,
+      ).toISOString(),
+
       gender: form.gender || null,
+
       hasCaregiver: form.hasCaregiver,
+
       caregiverName: form.hasCaregiver
         ? form.caregiverName.trim()
         : null,
+
       caregiverRelation: form.hasCaregiver
         ? form.caregiverRelation.trim()
         : null,
+
       phone: form.phone?.trim() || null,
+
       email: form.email?.trim() || null,
+
       consent: form.consent,
-      reviewedAt: null,
+
       reviewNote: null,
+
       requestStatus: "pending",
     },
   });
@@ -354,34 +442,64 @@ export async function updateRegistrationRequest(
   rowId: string,
   data: Record<string, unknown>,
 ): Promise<void> {
+  /*
+   * بعض أجزاء الواجهة ما زالت ترسل reviewedAt.
+   * بما أن العمود غير موجود في Appwrite،
+   * يتم حذفه قبل إرسال التحديث.
+   */
+  const {
+    reviewedAt: _removedReviewedAt,
+    ...validData
+  } = data;
+
   await tablesDB.updateRow({
     databaseId: appwriteConfig.databaseId,
-    tableId: appwriteConfig.tables.registrationRequests,
+
+    tableId:
+      appwriteConfig.tables.registrationRequests,
+
     rowId,
-    data,
+
+    data: validData,
   });
 }
 
 function appointmentStatusForAppwrite(
   status: Appointment["status"],
 ): string {
-  return status === "missed" ? "no_show" : status;
+  return status === "missed"
+    ? "no_show"
+    : status;
 }
 
-function appointmentData(appointment: Appointment) {
+function appointmentData(
+  appointment: Appointment,
+) {
   return {
     patientId: appointment.patientId,
+
     employeeId: appointment.employeeId,
+
     scheduledAt: new Date(
-      `${appointment.date}T${appointment.time || "00:00"}:00.000Z`,
+      `${appointment.date}T${
+        appointment.time || "00:00"
+      }:00.000Z`,
     ).toISOString(),
-    durationMinutes: appointment.durationMin,
+
+    durationMinutes:
+      appointment.durationMin,
+
     appointmentType: appointment.type,
-    appointmentStatus: appointmentStatusForAppwrite(
-      appointment.status,
-    ),
+
+    appointmentStatus:
+      appointmentStatusForAppwrite(
+        appointment.status,
+      ),
+
     room: null,
+
     notes: appointment.notes ?? null,
+
     cancellationReason:
       appointment.status === "cancelled"
         ? appointment.notes ?? "أُلغي الموعد"
@@ -394,9 +512,16 @@ export async function createAppointmentRow(
 ): Promise<string> {
   const row = await tablesDB.createRow({
     databaseId: appwriteConfig.databaseId,
-    tableId: appwriteConfig.tables.appointments,
+
+    tableId:
+      appwriteConfig.tables.appointments,
+
     rowId: ID.unique(),
-    data: appointmentData({ ...appointment, id: "" }),
+
+    data: appointmentData({
+      ...appointment,
+      id: "",
+    }),
   });
 
   return row.$id;
@@ -407,8 +532,12 @@ export async function updateAppointmentRow(
 ): Promise<void> {
   await tablesDB.updateRow({
     databaseId: appwriteConfig.databaseId,
-    tableId: appwriteConfig.tables.appointments,
+
+    tableId:
+      appwriteConfig.tables.appointments,
+
     rowId: appointment.id,
+
     data: appointmentData(appointment),
   });
 }
@@ -416,72 +545,138 @@ export async function updateAppointmentRow(
 export async function createSessionRow(
   session: Omit<RehabSession, "id">,
 ): Promise<string> {
-  const progressValues = session.goalProgressUpdates.map(
-    (item) => item.newProgress,
-  );
+  const progressValues =
+    session.goalProgressUpdates.map(
+      (item) => item.newProgress,
+    );
+
   const progressScore =
     progressValues.length > 0
       ? Math.round(
-          progressValues.reduce((sum, value) => sum + value, 0) /
-            progressValues.length,
+          progressValues.reduce(
+            (sum, value) => sum + value,
+            0,
+          ) / progressValues.length,
         )
       : null;
 
   const row = await tablesDB.createRow({
     databaseId: appwriteConfig.databaseId,
-    tableId: appwriteConfig.tables.sessions,
+
+    tableId:
+      appwriteConfig.tables.sessions,
+
     rowId: ID.unique(),
+
     data: {
       patientId: session.patientId,
+
       employeeId: session.employeeId,
+
       appointmentId: null,
+
       treatmentPlanId: null,
+
       sessionDate: new Date(
         `${session.date}T00:00:00.000Z`,
       ).toISOString(),
+
       durationMinutes: session.durationMin,
+
       sessionType: session.type,
+
       sessionStatus:
-        session.status === "completed" ? "completed" : "scheduled",
+        session.status === "completed"
+          ? "completed"
+          : "scheduled",
+
       progressScore,
+
       objectivesWorkedOn:
-        session.completedExerciseIds.join("\n") || null,
-      observations: session.notes || null,
+        session.completedExerciseIds.join("\n") ||
+        null,
+
+      observations:
+        session.notes || null,
+
       patientResponse: session.attendance,
-      recommendations: session.nextRecommendations || null,
+
+      recommendations:
+        session.nextRecommendations || null,
     },
   });
 
   return row.$id;
 }
 
-function sessionsPerWeek(value: string): number {
-  const parsed = Number.parseInt(value.match(/\d+/)?.[0] ?? "1", 10);
-  return Math.min(7, Math.max(1, parsed));
+function sessionsPerWeek(
+  value: string,
+): number {
+  const parsed = Number.parseInt(
+    value.match(/\d+/)?.[0] ?? "1",
+    10,
+  );
+
+  return Math.min(
+    7,
+    Math.max(1, parsed),
+  );
 }
 
-function treatmentPlanData(plan: Omit<TreatmentPlan, "id">) {
-  const goals = plan.goals.map((goal) => goal.text).filter(Boolean);
+function treatmentPlanData(
+  plan: Omit<TreatmentPlan, "id">,
+) {
+  const goals = plan.goals
+    .map((goal) => goal.text)
+    .filter(Boolean);
 
   return {
     patientId: plan.patientId,
-    responsibleEmployeeId: plan.employeeId,
+
+    responsibleEmployeeId:
+      plan.employeeId,
+
     title: plan.title,
-    startDate: new Date(`${plan.startDate}T00:00:00.000Z`).toISOString(),
-    endDate: new Date(
-      `${plan.endDate ?? plan.reviewDate ?? plan.startDate}T00:00:00.000Z`,
+
+    startDate: new Date(
+      `${plan.startDate}T00:00:00.000Z`,
     ).toISOString(),
+
+    endDate: new Date(
+      `${
+        plan.endDate ??
+        plan.reviewDate ??
+        plan.startDate
+      }T00:00:00.000Z`,
+    ).toISOString(),
+
     planStatus: plan.status,
-    sessionsPerWeek: sessionsPerWeek(plan.sessionFrequency),
+
+    sessionsPerWeek: sessionsPerWeek(
+      plan.sessionFrequency,
+    ),
+
     sessionDurationMinutes: 60,
-    overallGoal: goals[0] ?? plan.title,
+
+    overallGoal:
+      goals[0] ?? plan.title,
+
     objectives: goals.join("\n"),
-    interventions: plan.notes || null,
+
+    interventions:
+      plan.notes || null,
+
     reviewDate: plan.reviewDate
-      ? new Date(`${plan.reviewDate}T00:00:00.000Z`).toISOString()
+      ? new Date(
+          `${plan.reviewDate}T00:00:00.000Z`,
+        ).toISOString()
       : null,
+
     progressSummary:
-      plan.progress > 0 ? `نسبة التقدم الحالية: ${plan.progress}%` : null,
+      plan.progress > 0
+        ? `نسبة التقدم الحالية: ${plan.progress}%`
+        : null,
+
     notes: plan.notes || null,
   };
 }
@@ -491,8 +686,12 @@ export async function createTreatmentPlanRow(
 ): Promise<string> {
   const row = await tablesDB.createRow({
     databaseId: appwriteConfig.databaseId,
-    tableId: appwriteConfig.tables.treatmentPlans,
+
+    tableId:
+      appwriteConfig.tables.treatmentPlans,
+
     rowId: ID.unique(),
+
     data: treatmentPlanData(plan),
   });
 
@@ -504,8 +703,12 @@ export async function updateTreatmentPlanRow(
 ): Promise<void> {
   await tablesDB.updateRow({
     databaseId: appwriteConfig.databaseId,
-    tableId: appwriteConfig.tables.treatmentPlans,
+
+    tableId:
+      appwriteConfig.tables.treatmentPlans,
+
     rowId: plan.id,
+
     data: treatmentPlanData(plan),
   });
 }
